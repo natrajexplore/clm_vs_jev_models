@@ -1,0 +1,23 @@
+{
+  "task": "ag_news",
+  "method": "clm_probe",
+  "variant": "fixed_C",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "seed": 2,
+  "task_seed": 0,
+  "n": 500,
+  "accuracy": 0.804,
+  "accuracy_ci95": [
+    0.76995,
+    0.838
+  ],
+  "macro_f1": 0.7991448297051643,
+  "ece": 0.3827890774011612,
+  "brier": 0.4986288618714555,
+  "nll": 0.9449099666505727,
+  "labeled_examples_used": 64,
+  "C": 1.0,
+  "embed_seconds": 4.95,
+  "ms_per_example": 9.892296600155532,
+  "cost_usd": 0.0
+}

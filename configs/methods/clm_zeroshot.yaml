@@ -1,4 +1,6 @@
 name: clm_zeroshot
+variant: temp_scaled
+seed: 0                                         # which 500 train examples are used for calibration
 model: sentence-transformers/all-MiniLM-L6-v2   # contrastively trained sentence encoder
 batch_size: 64
 label_template: "{description}"                 # text embedded for each label (same descriptions Jev sees)

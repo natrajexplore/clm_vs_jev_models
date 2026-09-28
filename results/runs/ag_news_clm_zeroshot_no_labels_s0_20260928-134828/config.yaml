@@ -20,8 +20,10 @@ task:
       gadgets'
 method:
   name: clm_zeroshot
+  variant: no_labels
+  seed: 0
   model: sentence-transformers/all-MiniLM-L6-v2
   batch_size: 64
   label_template: '{description}'
   temperature: 0.05
-  calibration_size: 500
+  calibration_size: 0

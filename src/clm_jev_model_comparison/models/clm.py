@@ -10,6 +10,7 @@ from scipy.optimize import minimize_scalar
 from scipy.special import log_softmax, softmax
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 
 class ContrastiveEncoder:
@@ -38,6 +39,20 @@ def fit_temperature(sims: np.ndarray, labels: np.ndarray, bounds: tuple[float, f
     return float(np.exp(res.x))
 
 
-def fit_probe(x: np.ndarray, y: np.ndarray, C: float, max_iter: int) -> LogisticRegression:
-    """Logistic regression on frozen embeddings x (N, D)."""
-    return LogisticRegression(C=C, max_iter=max_iter).fit(x, y)
+def fit_probe(
+    x: np.ndarray, y: np.ndarray, C: float | list[float], max_iter: int, cv_folds: int = 4, seed: int = 0
+) -> tuple[LogisticRegression, float]:
+    """Logistic regression on frozen embeddings x (N, D). Returns (probe, chosen C).
+
+    A list of ``C`` values is searched by stratified k-fold log-loss on (x, y) only, so the
+    choice rewards calibration as well as accuracy and never sees test data.
+    """
+    if isinstance(C, (int, float)):
+        return LogisticRegression(C=C, max_iter=max_iter).fit(x, y), float(C)
+    search = GridSearchCV(
+        LogisticRegression(max_iter=max_iter),
+        {"C": list(C)},
+        scoring="neg_log_loss",
+        cv=StratifiedKFold(cv_folds, shuffle=True, random_state=seed),
+    ).fit(x, y)
+    return search.best_estimator_, float(search.best_params_["C"])

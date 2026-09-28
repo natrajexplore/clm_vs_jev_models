@@ -65,6 +65,7 @@ size that were actually tested.
 - Do report calibration (ECE, Brier, NLL) alongside accuracy. Calibration is Jev's main claim.
 - Do log the exact Jev model version the API returns (`jev-latest` is an alias that moves).
 - Do cache Jev responses (`results/cache/`) so reruns and re-analysis don't re-bill.
+- Do keep a "before" config when fixing a method, and show before/after in the app.
 - Do fix seeds, and use more than one seed / test subset before trusting small differences.
 - Do write a short entry in `results/NOTES.md` after each experiment.
 
@@ -92,7 +93,7 @@ Always check current package versions and the Jev API docs before writing code. 
 ├── README.md
 ├── configs/
 │   ├── tasks/        # dataset, test subset, instructions, label keys + descriptions
-│   └── methods/      # jev.yaml, clm_zeroshot.yaml, clm_probe.yaml
+│   └── methods/      # one file per variant (name + variant + seed); fixed_C / no_labels kept as baselines
 ├── src/clm_jev_model_comparison/
 │   ├── data/tasks.py     # load HF dataset -> TaskData, k-shot sampling
 │   ├── models/clm.py     # encoder, zero-shot probs, temperature fit, probe
@@ -100,6 +101,8 @@ Always check current package versions and the Jev API docs before writing code. 
 │   ├── eval/metrics.py   # accuracy, macro-F1, ECE, Brier, NLL, latency
 │   ├── eval/compare.py   # results/runs/*/metrics.json -> results/summary.md
 │   ├── run.py            # one method x one task -> predictions.jsonl + metrics.json
+│   ├── app/server.py     # FastAPI: /api/results (grouped over seeds), /api/predict (live playground)
+│   ├── app/static/index.html  # dashboard + playground (plain HTML/JS/SVG, no build step)
 │   └── utils/            # config overrides, seeding, run dirs
 ├── results/
 │   ├── runs/         # per-run config, predictions, metrics

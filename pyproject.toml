@@ -9,12 +9,14 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "datasets>=5.0.1",
+    "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "numpy>=2.4.6",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.9.1",
     "sentence-transformers>=6.1.0",
     "torch>=2.14.0",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]

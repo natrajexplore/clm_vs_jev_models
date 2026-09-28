@@ -74,7 +74,9 @@ def run_clm_zeroshot(task: TaskData, m: dict[str, Any], seed: int) -> RunResult:
 def run_clm_probe(task: TaskData, m: dict[str, Any], seed: int) -> RunResult:
     enc = ContrastiveEncoder(m["model"], m["batch_size"])
     idx = sample_per_class(task.train_labels, m["shots_per_class"], seed)
-    probe = fit_probe(enc.embed([task.train_texts[i] for i in idx]), task.train_labels[idx], m["C"], m["max_iter"])
+    probe, chosen_C = fit_probe(
+        enc.embed([task.train_texts[i] for i in idx]), task.train_labels[idx], m["C"], m["max_iter"], m["cv_folds"], seed
+    )
 
     t0 = time.perf_counter()
     x = enc.embed(task.test_texts)
@@ -83,6 +85,7 @@ def run_clm_probe(task: TaskData, m: dict[str, Any], seed: int) -> RunResult:
     probs[:, probe.classes_] = probe.predict_proba(x)
     info = {
         "labeled_examples_used": len(idx),
+        "C": chosen_C,
         "embed_seconds": round(embed_s, 2),
         "ms_per_example": embed_s / len(x) * 1e3,
         "cost_usd": 0.0,
@@ -104,20 +107,23 @@ def main() -> None:
     with open(args.task) as f_task, open(args.method) as f_method:
         cfg = {"task": yaml.safe_load(f_task), "method": yaml.safe_load(f_method)}
     apply_overrides(cfg, args.set)
-    seed = cfg["task"]["seed"]
+    # task.seed fixes the test subset (identical for all methods); method.seed drives the
+    # method's own sampling (calibration sample, k-shot sample), varied for error bars.
+    seed = cfg["method"]["seed"]
     seed_everything(seed)
 
     task = load_task(cfg["task"])
-    method = cfg["method"]["name"]
+    method, variant = cfg["method"]["name"], cfg["method"]["variant"]
     probs, extras, info = RUNNERS[method](task, cfg["method"], seed)
 
-    run_dir = make_run_dir(args.output_root, f"{task.name}_{method}")
+    run_dir = make_run_dir(args.output_root, f"{task.name}_{method}_{variant}_s{seed}")
     save_config(run_dir, cfg)
     with open(run_dir / "predictions.jsonl", "w") as f:
         for i, (label, p, extra) in enumerate(zip(task.test_labels, probs, extras)):
             f.write(json.dumps({"i": i, "label": int(label), "pred": int(p.argmax()), "probs": p.round(6).tolist(), **extra}) + "\n")
 
-    metrics = {"task": task.name, "method": method, "model": cfg["method"]["model"], "seed": seed,
+    metrics = {"task": task.name, "method": method, "variant": variant, "model": cfg["method"]["model"],
+               "seed": seed, "task_seed": cfg["task"]["seed"],
                **classification_metrics(probs, task.test_labels), **info}
     save_json(run_dir / "metrics.json", metrics)
     print(json.dumps({k: v for k, v in metrics.items() if not isinstance(v, dict)}, indent=2))

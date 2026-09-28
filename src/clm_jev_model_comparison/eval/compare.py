@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-COLUMNS = ["task", "method", "n", "accuracy", "macro_f1", "ece", "brier", "nll",
+COLUMNS = ["task", "method", "variant", "seed", "n", "accuracy", "macro_f1", "ece", "brier", "nll",
            "labeled_examples_used", "latency_ms", "cost_usd", "run"]
 
 
@@ -29,7 +29,7 @@ def main() -> None:
     parser.add_argument("--out", default="results/summary.md")
     args = parser.parse_args()
 
-    rows = sorted((_row(p) for p in Path(args.runs).glob("*/metrics.json")), key=lambda r: (r["task"], r["method"], r["run"]))
+    rows = sorted((_row(p) for p in Path(args.runs).glob("*/metrics.json")), key=lambda r: (r["task"], r["method"], r.get("variant", ""), r["run"]))
     lines = ["| " + " | ".join(COLUMNS) + " |", "|" + "---|" * len(COLUMNS)]
     lines += ["| " + " | ".join(_fmt(r.get(c)) for c in COLUMNS) + " |" for r in rows]
     note = ("\nlatency_ms: Jev = p50 per-request network latency; CLM = amortized local CPU embedding time per example. "

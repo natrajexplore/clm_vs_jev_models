@@ -1,4 +1,6 @@
 name: jev
+variant: zero_shot
+seed: 0                                # unused by Jev (no sampling on our side); kept for a uniform schema
 model: jev-latest                      # alias; the exact version (e.g. jev-1.13.0) is logged per run
 base_url: https://api.typesafe.ai/v1/systemone
 max_concurrency: 8                     # documented limit: 1,200 requests/minute

@@ -1,6 +1,9 @@
 name: clm_probe
+variant: cv_C
+seed: 0                          # which k-shot examples are drawn, and the CV fold split
 model: sentence-transformers/all-MiniLM-L6-v2
 batch_size: 64
-shots_per_class: 16      # labeled TRAIN examples per class for the logistic-regression probe
-C: 1.0                   # fixed: too few shots for reliable C selection
+shots_per_class: 16              # labeled TRAIN examples per class for the logistic-regression probe
+C: [0.1, 1.0, 10.0, 100.0, 1000.0]   # searched by stratified CV log-loss on the k-shot sample only
+cv_folds: 4
 max_iter: 1000

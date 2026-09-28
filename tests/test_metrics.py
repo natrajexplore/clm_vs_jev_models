@@ -2,7 +2,13 @@ import math
 
 import numpy as np
 
-from clm_jev_model_comparison.eval.metrics import classification_metrics, expected_calibration_error, latency_summary
+from clm_jev_model_comparison.eval.metrics import (
+    bootstrap_accuracy_ci,
+    classification_metrics,
+    expected_calibration_error,
+    latency_summary,
+    reliability_bins,
+)
 
 
 def test_perfect_one_hot_predictions():
@@ -34,6 +40,21 @@ def test_ece_handles_confidence_one():
 def test_nll_is_finite_for_confidently_wrong_zero():
     m = classification_metrics(np.array([[1.0, 0.0]]), np.array([1]))
     assert math.isfinite(m["nll"]) and m["nll"] > 20
+
+
+def test_bootstrap_ci_brackets_accuracy():
+    correct = np.array([True] * 80 + [False] * 20)
+    lo, hi = bootstrap_accuracy_ci(correct)
+    assert lo < 0.8 < hi and hi - lo < 0.2
+    assert bootstrap_accuracy_ci(np.ones(50, dtype=bool)) == (1.0, 1.0)
+
+
+def test_reliability_bins():
+    probs = np.array([[0.95, 0.05], [0.92, 0.08], [0.55, 0.45]])
+    bins = reliability_bins(probs, np.array([0, 1, 0]), n_bins=10)
+    assert [b["bin"] for b in bins] == [5, 9]
+    assert bins[1]["count"] == 2 and bins[1]["accuracy"] == 0.5
+    assert math.isclose(bins[1]["confidence"], 0.935)
 
 
 def test_latency_summary():

@@ -32,25 +32,44 @@ uv run python -m clm_jev_model_comparison.eval.compare      # -> results/summary
 Override any config key with `--set`, e.g. `--set task.test_size=50 method.shots_per_class=64`.
 Try a small `test_size` with Jev first. Responses are cached in `results/cache/`, so reruns are free.
 
-## Methods
+## Comparison app (dashboard + live playground)
 
-| Method | Labeled data used | Probabilities come from |
+```bash
+uv run --env-file .env uvicorn clm_jev_model_comparison.app.server:app --port 8006
+# open http://127.0.0.1:8006
+```
+
+- **Dashboard:** results table (mean ± std over seeds), accuracy-vs-calibration scatter,
+  reliability diagrams, and corrective actions with before/after numbers. It reads
+  `results/runs/` on every page load, so new runs show up after a refresh.
+- **Playground:** type any text and see Jev and both CLM methods side by side. The first
+  request loads the models (about 30 s). Each playground request makes one real Jev call.
+- The backend holds the Jev key. It never reaches the browser.
+
+## Methods (each config file is one variant)
+
+| Config | Labeled data used | Probabilities come from |
 |---|---|---|
-| `clm_zeroshot` | `calibration_size` train examples (default 500), used only to fit a softmax temperature. Set to 0 for pure zero-shot. | softmax(cosine similarity to label descriptions / T) |
-| `clm_probe` | `shots_per_class` train examples per class | logistic regression on embeddings |
-| `jev` | none | Jev `choice` question: `probabilities` field |
+| `jev.yaml` | none | Jev `choice` question: `probabilities` field |
+| `clm_zeroshot_nolabels.yaml` | none (fixed T=0.05) | softmax(cosine similarity to label descriptions / T) |
+| `clm_zeroshot.yaml` | 500 train examples, used only to fit T | same, with a fitted temperature |
+| `clm_probe_fixedC.yaml` | 16 per class | logistic regression, C=1.0 (the "before" config) |
+| `clm_probe.yaml` | 16 per class | logistic regression, C chosen by CV log-loss on those 16 shots |
+
+`task.seed` fixes the test subset for all methods. `method.seed` drives each method's own
+sampling; vary it for error bars, e.g. `--set method.seed=1`.
 
 ## Output per run (`results/runs/<task>_<method>_<timestamp>/`)
 
 - `config.yaml`: the full task + method config
 - `predictions.jsonl`: label, prediction and probabilities per example (plus Jev confidence and latency)
-- `metrics.json`: accuracy, macro-F1, ECE, Brier, NLL, labeled examples used, latency, cost and the Jev model version
+- `metrics.json`: accuracy (with 95% bootstrap CI), macro-F1, ECE, Brier, NLL, labeled examples used, latency, cost and the Jev model version
 
 ## Caveats
 
 - Jev latency is network round-trip time; CLM latency is amortized local CPU time. They are
   different measurements.
-- Jev's `usage.input_tokens` location in the response isn't pinned down in the docs. The
-  client accepts it per answer or top-level; check `input_tokens_missing` in `metrics.json`.
+- Jev can return probability exactly 0.0 for the true label. NLL clips at 1e-12, so a few
+  such answers dominate Jev's NLL. See `results/NOTES.md`.
 - Banking77 (77 intents) was planned as a second task, but its Hugging Face version is
   script-based and won't load with `datasets` 5.x.

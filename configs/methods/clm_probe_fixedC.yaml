@@ -1,0 +1,11 @@
+# "Before" configuration: default C=1.0 over-regularizes unit-norm embeddings -> underconfident (ECE ~0.40).
+# Kept so the corrective action can be reproduced as a before/after comparison.
+name: clm_probe
+variant: fixed_C
+seed: 0
+model: sentence-transformers/all-MiniLM-L6-v2
+batch_size: 64
+shots_per_class: 16
+C: 1.0
+cv_folds: 4                      # unused when C is a single value
+max_iter: 1000

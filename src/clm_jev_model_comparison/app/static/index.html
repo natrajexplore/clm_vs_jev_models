@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLM vs Jev</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb; --border: rgba(11,11,11,0.10);
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7;
+  --jev: #2a78d6; --clm_zeroshot: #eb6834; --clm_probe: #1baf7a;
+  --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --wash: rgba(11,11,11,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --border: rgba(255,255,255,0.10);
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835;
+    --jev: #3987e5; --clm_zeroshot: #d95926; --clm_probe: #199e70;
+    --good-text: #0ca30c; --wash: rgba(255,255,255,0.05);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19; --border: rgba(255,255,255,0.10);
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+  --grid: #2c2c2a; --axis: #383835;
+  --jev: #3987e5; --clm_zeroshot: #d95926; --clm_probe: #199e70;
+  --good-text: #0ca30c; --wash: rgba(255,255,255,0.05);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-primary);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 0 0 4px; }
+.sub { color: var(--text-secondary); margin: 0; }
+.muted { color: var(--text-muted); font-size: 12px; }
+section { margin-top: 28px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.grid { display: grid; gap: 12px; }
+.tiles { grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
+.tile .label { color: var(--text-secondary); font-size: 13px; }
+.tile .value { font-size: 28px; font-weight: 600; margin: 2px 0; }
+.tile .detail { color: var(--text-muted); font-size: 12px; }
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-primary); padding: 6px 12px; }
+button:hover { background: var(--wash); }
+button.primary { background: var(--text-primary); color: var(--surface-1); border-color: transparent; }
+button:disabled { opacity: .5; cursor: default; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
+th:first-child, td:first-child { text-align: left; }
+tbody tr:hover { background: var(--wash); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: 0; }
+.swatch.hollow { background: transparent !important; border: 2px solid; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--text-secondary); font-size: 12px; margin: 8px 0; }
+svg text { fill: var(--text-muted); font-size: 11px; }
+svg .ink { fill: var(--text-secondary); font-size: 12px; }
+.multiples { grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); }
+.multiples h3 { font-size: 12px; font-weight: 500; margin: 0 0 4px; color: var(--text-secondary); }
+.actions { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+.action h3 { font-size: 15px; margin: 0 0 6px; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 6px; }
+.status .dot { width: 16px; height: 16px; border-radius: 50%; display: inline-grid; place-items: center;
+  color: #fff; font-size: 11px; font-weight: 700; }
+.action p { margin: 4px 0; color: var(--text-secondary); }
+.action p b { color: var(--text-primary); font-weight: 600; }
+.ba { margin-top: 10px; font-variant-numeric: tabular-nums; }
+.ba td, .ba th { padding: 4px 6px; font-size: 13px; }
+.better { color: var(--good-text); font-weight: 600; }
+textarea { width: 100%; min-height: 84px; font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.samples button { font-size: 12px; padding: 4px 10px; }
+.pg { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); margin-top: 12px; }
+.pg .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.pg .name { font-weight: 600; }
+.bar-row { display: grid; grid-template-columns: 76px 1fr 44px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+.bar-row .track { height: 10px; background: var(--wash); border-radius: 4px; }
+.bar-row .fill { height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
+.bar-row .v { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.bar-row.top .k, .bar-row.top .v { color: var(--text-primary); font-weight: 600; }
+.err { color: var(--critical); font-size: 13px; }
+#tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  display: none; z-index: 10; max-width: 260px; }
+#tip b { display: block; margin-bottom: 2px; }
+@media (max-width: 600px) { .tile .value { font-size: 24px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>CLM vs Jev</h1>
+      <p class="sub" id="subtitle">Loading results…</p>
+    </div>
+    <button id="theme" title="Toggle light/dark">◐ Theme</button>
+  </header>
+
+  <section>
+    <div class="grid tiles" id="tiles"></div>
+  </section>
+
+  <section>
+    <h2>Results</h2>
+    <p class="muted">Mean over seeds (± std) where a variant ran more than once; otherwise the 95% bootstrap CI. Identical 500-article test subset for every method.</p>
+    <div class="card table-wrap"><table id="results"></table></div>
+  </section>
+
+  <section>
+    <h2>Accuracy vs calibration</h2>
+    <p class="muted">Up is more accurate, left is better calibrated (lower ECE). Whiskers show ± std over seeds. Hollow markers are the configuration before a fix.</p>
+    <div class="card">
+      <div class="legend" id="legend"></div>
+      <div id="scatter"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Reliability diagrams</h2>
+    <p class="muted">Bars show accuracy within each confidence bin; the diagonal is perfect calibration. Bars below the line are overconfident, bars above are underconfident. All seeds pooled.</p>
+    <div class="grid multiples" id="reliability"></div>
+  </section>
+
+  <section>
+    <h2>Corrective actions</h2>
+    <p class="muted">Issues found in the first baseline, what changed, and the measured effect.</p>
+    <div class="grid actions" id="actions"></div>
+  </section>
+
+  <section>
+    <h2>Playground</h2>
+    <p class="muted" id="pg-note">Type any text and compare live predictions. The first request loads the models (about 30 s).</p>
+    <div class="card">
+      <textarea id="pg-text" placeholder="Paste a news headline or short article…"></textarea>
+      <div class="row samples" id="samples"></div>
+      <div class="row"><button class="primary" id="pg-go">Compare</button><span class="muted" id="pg-status"></span></div>
+    </div>
+    <div class="grid pg" id="pg-out"></div>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const FAMILY = { jev: "Jev", clm_zeroshot: "CLM zero-shot", clm_probe: "CLM probe" };
+const VARIANT = {
+  "jev/zero_shot": "Jev",
+  "clm_zeroshot/no_labels": "CLM zero-shot · no labels",
+  "clm_zeroshot/temp_scaled": "CLM zero-shot · temp-scaled",
+  "clm_probe/fixed_C": "CLM probe · C=1 (before)",
+  "clm_probe/cv_C": "CLM probe · CV-chosen C",
+};
+const BEFORE = new Set(["clm_probe/fixed_C"]);
+const key = g => `${g.method}/${g.variant}`;
+const nameOf = g => VARIANT[key(g)] || key(g);
+const color = m => `var(--${m})`;
+const pct = v => (v * 100).toFixed(1) + "%";
+const f3 = v => v.toFixed(3);
+const el = (tag, attrs = {}, text) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const svgEl = (tag, attrs = {}, text) => {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+
+// ---------- tooltip ----------
+const tip = document.getElementById("tip");
+function hover(target, title, lines) {
+  target.addEventListener("mousemove", ev => {
+    tip.replaceChildren(el("b", {}, title), ...lines.map(l => el("div", {}, l)));
+    tip.style.display = "block";
+    const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+    const y = Math.min(ev.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  });
+  target.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+}
+
+// ---------- theme ----------
+document.getElementById("theme").onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+};
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+// ---------- renderers ----------
+function accText(g) {
+  if (g.n_runs > 1) return `${pct(g.accuracy.mean)} ± ${(g.accuracy.std * 100).toFixed(1)}`;
+  const ci = g.accuracy_ci95;
+  return ci ? `${pct(g.accuracy.mean)} [${(ci[0] * 100).toFixed(1)}–${(ci[1] * 100).toFixed(1)}]` : pct(g.accuracy.mean);
+}
+const latText = g => g.method === "jev" ? `${g.latency_ms.toFixed(0)} ms net` : `${g.latency_ms.toFixed(1)} ms CPU`;
+const costPer1k = g => g.cost.mean / g.n_test * 1000;
+
+function renderTiles(groups) {
+  const jev = groups.find(g => g.method === "jev");
+  const clm = groups.filter(g => g.method !== "jev").sort((a, b) => b.accuracy.mean - a.accuracy.mean)[0];
+  const tiles = [];
+  if (jev) tiles.push(["Jev accuracy", pct(jev.accuracy.mean), `0 labeled examples · ECE ${f3(jev.ece.mean)}`]);
+  if (clm) tiles.push(["Best CLM accuracy", pct(clm.accuracy.mean), `${nameOf(clm)} · ${clm.labeled_examples_used} labels`]);
+  if (jev) tiles.push(["Jev latency (p50)", `${jev.latency_ms.toFixed(0)} ms`, "network round trip per request"]);
+  if (jev) tiles.push(["Jev cost / 1k texts", `$${costPer1k(jev).toFixed(4)}`, "CLM runs locally: $0 API cost"]);
+  document.getElementById("tiles").replaceChildren(...tiles.map(([l, v, d]) => {
+    const t = el("div", { class: "card tile" });
+    t.append(el("div", { class: "label" }, l), el("div", { class: "value" }, v), el("div", { class: "detail" }, d));
+    return t;
+  }));
+}
+
+function renderTable(groups) {
+  const cols = ["Method", "Labels used", "Seeds", "Accuracy", "Macro-F1", "ECE ↓", "Brier ↓", "NLL ↓", "Latency", "Cost / 1k"];
+  const thead = el("thead"); const hr = el("tr");
+  cols.forEach(c => hr.append(el("th", {}, c))); thead.append(hr);
+  const tbody = el("tbody");
+  for (const g of groups) {
+    const tr = el("tr");
+    const first = el("td");
+    const sw = el("span", { class: "swatch" + (BEFORE.has(key(g)) ? " hollow" : "") });
+    sw.style.background = color(g.method); sw.style.borderColor = color(g.method);
+    first.append(sw, document.createTextNode(nameOf(g)));
+    tr.append(first,
+      el("td", {}, String(g.labeled_examples_used)),
+      el("td", {}, String(g.n_runs)),
+      el("td", {}, accText(g)),
+      el("td", {}, f3(g.macro_f1.mean)),
+      el("td", {}, f3(g.ece.mean)),
+      el("td", {}, f3(g.brier.mean)),
+      el("td", {}, f3(g.nll.mean)),
+      el("td", {}, latText(g)),
+      el("td", {}, g.cost.mean ? `$${costPer1k(g).toFixed(4)}` : "$0 (local)"));
+    tbody.append(tr);
+  }
+  document.getElementById("results").replaceChildren(thead, tbody);
+}
+
+function renderLegend() {
+  const lg = document.getElementById("legend");
+  lg.replaceChildren(...Object.entries(FAMILY).map(([m, label]) => {
+    const s = el("span"); const sw = el("span", { class: "swatch" }); sw.style.background = color(m);
+    s.append(sw, document.createTextNode(label)); return s;
+  }));
+  const s = el("span"); const sw = el("span", { class: "swatch hollow" }); sw.style.borderColor = "var(--text-muted)";
+  s.append(sw, document.createTextNode("before fix")); lg.append(s);
+}
+
+function renderScatter(groups) {
+  const W = 720, H = 360, m = { t: 16, r: 190, b: 44, l: 56 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const eceMax = Math.max(0.1, ...groups.map(g => g.ece.mean + g.ece.std)) * 1.1;
+  const accs = groups.flatMap(g => [g.accuracy.mean - g.accuracy.std, g.accuracy.mean + g.accuracy.std]);
+  const aLo = Math.max(0, Math.floor((Math.min(...accs) - 0.02) * 20) / 20);
+  const aHi = Math.min(1, Math.ceil((Math.max(...accs) + 0.02) * 20) / 20);
+  const x = v => m.l + v / eceMax * iw;
+  const y = v => m.t + ih - (v - aLo) / (aHi - aLo) * ih;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img",
+    "aria-label": "Scatter of accuracy against expected calibration error per method" });
+
+  for (let a = aLo; a <= aHi + 1e-9; a += 0.05) {
+    svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: y(a), y2: y(a), stroke: "var(--grid)" }));
+    svg.append(svgEl("text", { x: m.l - 8, y: y(a) + 4, "text-anchor": "end" }, pct(a).replace(".0", "")));
+  }
+  const step = eceMax > 0.3 ? 0.1 : 0.05;
+  for (let e = 0; e <= eceMax + 1e-9; e += step) {
+    svg.append(svgEl("text", { x: x(e), y: m.t + ih + 18, "text-anchor": "middle" }, e.toFixed(2)));
+  }
+  svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: "var(--axis)" }));
+  svg.append(svgEl("text", { x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", class: "ink" }, "ECE (lower is better calibrated)"));
+  svg.append(svgEl("text", { x: 14, y: m.t + ih / 2, "text-anchor": "middle", class: "ink",
+    transform: `rotate(-90 14 ${m.t + ih / 2})` }, "Accuracy"));
+
+  // label placement: sort by y and push apart to avoid collisions
+  const pts = groups.map(g => ({ g, cx: x(g.ece.mean), cy: y(g.accuracy.mean) })).sort((a, b) => a.cy - b.cy);
+  let lastY = -Infinity;
+  for (const p of pts) { p.ly = Math.max(p.cy, lastY + 16); lastY = p.ly; }
+
+  for (const p of pts) {
+    const g = p.g, c = color(g.method), hollow = BEFORE.has(key(g));
+    const grp = svgEl("g");
+    if (g.n_runs > 1) {
+      grp.append(svgEl("line", { x1: p.cx, x2: p.cx, y1: y(g.accuracy.mean - g.accuracy.std), y2: y(g.accuracy.mean + g.accuracy.std), stroke: c, "stroke-width": 2 }));
+      grp.append(svgEl("line", { x1: x(Math.max(0, g.ece.mean - g.ece.std)), x2: x(g.ece.mean + g.ece.std), y1: p.cy, y2: p.cy, stroke: c, "stroke-width": 2 }));
+    }
+    grp.append(svgEl("circle", { cx: p.cx, cy: p.cy, r: 6, fill: hollow ? "var(--surface-1)" : c,
+      stroke: hollow ? c : "var(--surface-1)", "stroke-width": 2 }));
+    grp.append(svgEl("circle", { cx: p.cx, cy: p.cy, r: 16, fill: "transparent" }));  // hit target
+    const lx = m.l + iw + 12;
+    grp.append(svgEl("line", { x1: p.cx + 8, x2: lx - 4, y1: p.cy, y2: p.ly, stroke: "var(--grid)" }));
+    grp.append(svgEl("text", { x: lx, y: p.ly + 4, class: "ink" }, nameOf(g)));
+    hover(grp, nameOf(g), [
+      `Accuracy ${accText(g)}`, `ECE ${f3(g.ece.mean)}${g.n_runs > 1 ? " ± " + f3(g.ece.std) : ""}`,
+      `Labeled examples: ${g.labeled_examples_used}`, `Seeds: ${g.seeds.join(", ")}`]);
+    svg.append(grp);
+  }
+  document.getElementById("scatter").replaceChildren(svg);
+}
+
+function renderReliability(groups) {
+  const cards = groups.map(g => {
+    const S = 170, m = { t: 6, r: 6, b: 22, l: 28 }, iw = S - m.l - m.r, ih = S - m.t - m.b;
+    const svg = svgEl("svg", { viewBox: `0 0 ${S} ${S}`, width: "100%", role: "img",
+      "aria-label": `Reliability diagram for ${nameOf(g)}` });
+    for (const v of [0, 0.5, 1]) {
+      svg.append(svgEl("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih - v * ih, y2: m.t + ih - v * ih, stroke: "var(--grid)" }));
+      svg.append(svgEl("text", { x: m.l - 4, y: m.t + ih - v * ih + 4, "text-anchor": "end" }, v));
+      svg.append(svgEl("text", { x: m.l + v * iw, y: S - 6, "text-anchor": "middle" }, v));
+    }
+    const bw = iw / 10;
+    for (const b of g.reliability) {
+      const h = b.accuracy * ih;
+      const r = svgEl("rect", { x: m.l + b.bin * bw + 1, y: m.t + ih - h, width: bw - 2, height: Math.max(h, 1),
+        rx: 2, fill: color(g.method), "fill-opacity": BEFORE.has(key(g)) ? 0.45 : 1 });
+      hover(r, `Confidence ${(b.bin / 10).toFixed(1)}–${((b.bin + 1) / 10).toFixed(1)}`,
+        [`Mean confidence ${pct(b.confidence)}`, `Accuracy ${pct(b.accuracy)}`, `${b.count} predictions`]);
+      svg.append(r);
+    }
+    svg.append(svgEl("line", { x1: m.l, y1: m.t + ih, x2: m.l + iw, y2: m.t, stroke: "var(--text-muted)", "stroke-width": 1.5 }));
+    const card = el("div", { class: "card" });
+    card.append(el("h3", {}, `${nameOf(g)} · ECE ${f3(g.ece.mean)}`), svg);
+    return card;
+  });
+  document.getElementById("reliability").replaceChildren(...cards);
+}
+
+// ---------- corrective actions ----------
+const STATUS = {
+  fixed: { label: "Fixed", icon: "✓", color: "var(--good)" },
+  mitigated: { label: "Mitigated", icon: "!", color: "var(--warning)" },
+  open: { label: "Open", icon: "•", color: "var(--serious)" },
+};
+const ACTIONS = [
+  { title: "Probe was badly underconfident", status: "fixed",
+    problem: "Logistic regression with the default C=1.0 over-regularizes unit-norm embeddings, squashing probabilities toward uniform.",
+    fix: "C is now chosen by 4-fold stratified cross-validation (log-loss) on the 16-shot training sample only, never on test data. Trade-off: calibration improved sharply but accuracy fell about 2 points. CV picked the largest C tried (1000) on 2 of 3 seeds, so the search range should be widened next.",
+    compare: [["clm_probe/fixed_C", "Before"], ["clm_probe/cv_C", "After"]], metrics: ["accuracy", "ece", "nll"] },
+  { title: "\"Zero-shot\" CLM was using 500 labels", status: "fixed",
+    problem: "The zero-shot run fitted its softmax temperature on 500 labeled examples, while Jev uses none, which is not the same regime.",
+    fix: "Added a truly label-free variant. Temperature never changes accuracy, only calibration, so the label cost of good CLM calibration is now visible.",
+    compare: [["clm_zeroshot/no_labels", "0 labels"], ["clm_zeroshot/temp_scaled", "500 labels"]], metrics: ["accuracy", "ece", "nll"] },
+  { title: "Single run, no uncertainty", status: "fixed",
+    problem: "One seed and no intervals made small differences look meaningful.",
+    fix: "CLM variants run with 3 seeds (mean ± std), and every run stores a 95% bootstrap CI for accuracy. The test subset is fixed so all methods see the same 500 articles." },
+  { title: "Jev gives exactly 0% to some true labels", status: "open",
+    problem: "In 23 of 500 test articles Jev assigned probability 0.0 to the correct topic. Those answers are 87% of its NLL (1.455 overall, 0.19 without them), and mean confidence 95.5% vs 88% accuracy means it is mildly overconfident.",
+    fix: "NLL clips probabilities at 1e-12 so it stays finite. Downstream, never treat a Jev 0.0 as impossible: floor it, or route low-margin answers to review. Worth reporting to TypeSafe with examples." },
+  { title: "Latency is not like-for-like", status: "mitigated",
+    problem: "Jev latency is a network round trip; CLM latency is local CPU time amortized over a batch.",
+    fix: "Both are labeled by kind everywhere. A deployment comparison would need the CLM served behind an HTTP endpoint too." },
+  { title: "Only one dataset", status: "open",
+    problem: "All results are AG News (4 balanced news topics). Banking77 (77 intents) does not load with datasets 5.x.",
+    fix: "Next: add a many-label task (for example CLINC150 or a parquet mirror of Banking77). Many options with few shots per class is where the methods should diverge most." },
+  { title: "Jev run-to-run variation untested", status: "open",
+    problem: "Jev was evaluated in one pass and responses are cached, so any variation between calls is unmeasured.",
+    fix: "Next: re-query a sample without the cache and compare the probabilities." },
+];
+
+function renderActions(groups) {
+  const byKey = Object.fromEntries(groups.map(g => [key(g), g]));
+  const lowerBetter = { ece: true, nll: true, brier: true };
+  const fmt = (k, v) => k === "accuracy" ? pct(v) : f3(v);
+  const cards = ACTIONS.map(a => {
+    const s = STATUS[a.status];
+    const card = el("div", { class: "card action" });
+    const st = el("div", { class: "status" }); const dot = el("span", { class: "dot" }, s.icon);
+    dot.style.background = s.color; st.append(dot, document.createTextNode(s.label));
+    const p1 = el("p"); p1.append(el("b", {}, "Problem: "), document.createTextNode(a.problem));
+    const p2 = el("p"); p2.append(el("b", {}, "Change: "), document.createTextNode(a.fix));
+    card.append(st, el("h3", {}, a.title), p1, p2);
+    if (a.compare && a.compare.every(([k]) => byKey[k])) {
+      const [[k0, l0], [k1, l1]] = a.compare;
+      const t = el("table", { class: "ba" }); const hr = el("tr");
+      ["Metric", l0, l1].forEach(h => hr.append(el("th", {}, h))); t.append(hr);
+      for (const mk of a.metrics) {
+        const v0 = byKey[k0][mk].mean, v1 = byKey[k1][mk].mean;
+        const better = lowerBetter[mk] ? v1 < v0 : v1 > v0;
+        const tr = el("tr"); tr.append(el("td", {}, mk.toUpperCase().replace("ACCURACY", "Accuracy")),
+          el("td", {}, fmt(mk, v0)));
+        const c1 = el("td", {}, fmt(mk, v1)); if (Math.abs(v1 - v0) > 1e-6 && better) c1.className = "better";
+        tr.append(c1); t.append(tr);
+      }
+      card.append(t);
+    }
+    return card;
+  });
+  document.getElementById("actions").replaceChildren(...cards);
+}
+
+// ---------- playground ----------
+const SAMPLES = [
+  "Stocks rallied after the central bank held interest rates steady.",
+  "The striker scored twice as the home side won the cup final.",
+  "Researchers unveiled a battery chemistry that could double phone battery life.",
+  "Leaders met in Geneva to negotiate a ceasefire in the region.",
+  "Shares of the chipmaker jumped after it unveiled a new AI processor.",
+];
+const pgText = document.getElementById("pg-text");
+document.getElementById("samples").replaceChildren(...SAMPLES.map(s => {
+  const b = el("button", {}, s.length > 42 ? s.slice(0, 40) + "…" : s); b.onclick = () => { pgText.value = s; }; return b;
+}));
+
+function renderPrediction(method, title, r) {
+  const card = el("div", { class: "card" });
+  const head = el("div", { class: "head" });
+  const nm = el("span", { class: "name" }); const sw = el("span", { class: "swatch" }); sw.style.background = color(method);
+  nm.append(sw, document.createTextNode(title));
+  head.append(nm, el("span", { class: "muted" }, r.error ? "" : `${r.latency_ms.toFixed(0)} ms`));
+  card.append(head);
+  if (r.error) { card.append(el("div", { class: "err" }, r.error)); return card; }
+  for (const [k, p] of Object.entries(r.probabilities).sort((a, b) => b[1] - a[1])) {
+    const row = el("div", { class: "bar-row" + (k === r.choice ? " top" : "") });
+    const track = el("div", { class: "track" }); const fill = el("div", { class: "fill" });
+    fill.style.width = (p * 100) + "%"; fill.style.background = color(method); track.append(fill);
+    row.append(el("span", { class: "k" }, k), track, el("span", { class: "v" }, pct(p)));
+    card.append(row);
+  }
+  const extra = [r.note, r.confidence != null ? `confidence ${f3(r.confidence)}` : null].filter(Boolean).join(" · ");
+  if (extra) card.append(el("div", { class: "muted" }, extra));
+  return card;
+}
+
+document.getElementById("pg-go").onclick = async () => {
+  const text = pgText.value.trim(); if (!text) return;
+  const btn = document.getElementById("pg-go"), status = document.getElementById("pg-status");
+  btn.disabled = true; status.textContent = "Running…";
+  try {
+    const res = await fetch("/api/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    document.getElementById("pg-out").replaceChildren(
+      renderPrediction("jev", "Jev", data.jev),
+      renderPrediction("clm_zeroshot", "CLM zero-shot", data.clm_zeroshot),
+      renderPrediction("clm_probe", "CLM probe", data.clm_probe));
+    status.textContent = "";
+  } catch (e) {
+    status.textContent = ""; document.getElementById("pg-out").replaceChildren(el("div", { class: "err" }, String(e)));
+  } finally { btn.disabled = false; }
+};
+
+// ---------- load ----------
+(async () => {
+  try {
+    const [res, task] = await Promise.all([fetch("/api/results").then(r => r.json()), fetch("/api/task").then(r => r.json())]);
+    const order = Object.keys(VARIANT);
+    const groups = res.groups.map(g => ({ ...g, cost: g.cost_usd }))
+      .sort((a, b) => order.indexOf(key(a)) - order.indexOf(key(b)));
+    const jev = groups.find(g => g.method === "jev");
+    document.getElementById("subtitle").textContent =
+      `${task.name} · ${groups[0] ? groups[0].n_test : 0} test articles · labels: ${task.labels.map(l => l.key).join(", ")}` +
+      (jev && jev.model_version ? ` · ${jev.model_version}` : "");
+    if (!groups.length) { document.getElementById("subtitle").textContent += " · no runs found in results/runs"; return; }
+    renderTiles(groups); renderTable(groups); renderLegend(); renderScatter(groups);
+    renderReliability(groups); renderActions(groups);
+  } catch (e) {
+    document.getElementById("subtitle").textContent = "Failed to load results: " + e;
+  }
+})();
+</script>
+</body>
+</html>

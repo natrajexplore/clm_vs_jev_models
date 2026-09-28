@@ -1,0 +1,30 @@
+task:
+  name: ag_news
+  hf_path: fancyzhx/ag_news
+  text_field: text
+  label_field: label
+  train_split: train
+  test_split: test
+  test_size: 500
+  seed: 0
+  instructions: What is the main topic of this news article?
+  labels:
+  - key: world
+    description: 'World news: international affairs, politics, diplomacy, conflicts'
+  - key: sports
+    description: 'Sports: games, athletes, teams, competitions'
+  - key: business
+    description: 'Business: companies, markets, the economy, finance'
+  - key: sci_tech
+    description: 'Science and technology: computing, the internet, space, research,
+      gadgets'
+method:
+  name: clm_probe
+  variant: fixed_C
+  seed: 0
+  model: sentence-transformers/all-MiniLM-L6-v2
+  batch_size: 64
+  shots_per_class: 16
+  C: 1.0
+  cv_folds: 4
+  max_iter: 1000

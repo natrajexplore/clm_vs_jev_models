@@ -1,0 +1,30 @@
+{
+  "task": "ag_news",
+  "method": "jev",
+  "variant": "zero_shot",
+  "model": "jev-latest",
+  "seed": 0,
+  "task_seed": 0,
+  "n": 500,
+  "accuracy": 0.88,
+  "accuracy_ci95": [
+    0.852,
+    0.9060499999999998
+  ],
+  "macro_f1": 0.8769482946374267,
+  "ece": 0.08074000000000005,
+  "brier": 0.201596,
+  "nll": 1.4545123040440704,
+  "model_version": "jev-1.13.0",
+  "latency": {
+    "p50_ms": 336.969249881804,
+    "p95_ms": 420.4654600238427,
+    "mean_ms": 345.9912546062842
+  },
+  "wall_seconds": 21.95,
+  "cached_fraction": 0.0,
+  "input_tokens": 215602,
+  "input_tokens_missing": 0,
+  "cost_usd": 0.009055284,
+  "labeled_examples_used": 0
+}
