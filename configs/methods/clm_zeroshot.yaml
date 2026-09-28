@@ -1,0 +1,6 @@
+name: clm_zeroshot
+model: sentence-transformers/all-MiniLM-L6-v2   # contrastively trained sentence encoder
+batch_size: 64
+label_template: "{description}"                 # text embedded for each label (same descriptions Jev sees)
+temperature: 0.05                               # used only when calibration_size is 0
+calibration_size: 500                           # labeled TRAIN examples used to fit one softmax temperature; 0 = pure zero-shot

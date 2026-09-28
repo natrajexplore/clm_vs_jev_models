@@ -1,0 +1,8 @@
+name: jev
+model: jev-latest                      # alias; the exact version (e.g. jev-1.13.0) is logged per run
+base_url: https://api.typesafe.ai/v1/systemone
+max_concurrency: 8                     # documented limit: 1,200 requests/minute
+timeout_s: 30
+max_retries: 5                         # on 429/529/5xx, exponential backoff
+cache: results/cache/jev_cache.jsonl   # reruns reuse responses instead of re-billing
+price_per_mtok_input: 0.042            # USD per million input tokens, output free (docs.typesafe.ai/models, 2026-09-28)

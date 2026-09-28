@@ -1,0 +1,18 @@
+name: ag_news
+hf_path: fancyzhx/ag_news
+text_field: text
+label_field: label
+train_split: train
+test_split: test
+test_size: 500        # fixed random subset of the 7,600 test articles; identical for every method
+seed: 0               # test subset, calibration sample, k-shot sample
+instructions: "What is the main topic of this news article?"
+labels:               # order MUST match the dataset label ids (World, Sports, Business, Sci/Tech)
+  - key: world
+    description: "World news: international affairs, politics, diplomacy, conflicts"
+  - key: sports
+    description: "Sports: games, athletes, teams, competitions"
+  - key: business
+    description: "Business: companies, markets, the economy, finance"
+  - key: sci_tech
+    description: "Science and technology: computing, the internet, space, research, gadgets"

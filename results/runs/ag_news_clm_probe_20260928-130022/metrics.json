@@ -1,0 +1,16 @@
+{
+  "task": "ag_news",
+  "method": "clm_probe",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "seed": 0,
+  "n": 500,
+  "accuracy": 0.822,
+  "macro_f1": 0.8183090788604872,
+  "ece": 0.4045173894762994,
+  "brier": 0.4996583041125428,
+  "nll": 0.9488981573997378,
+  "labeled_examples_used": 64,
+  "embed_seconds": 5.56,
+  "ms_per_example": 11.115605600178242,
+  "cost_usd": 0.0
+}

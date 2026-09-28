@@ -1,0 +1,6 @@
+name: clm_probe
+model: sentence-transformers/all-MiniLM-L6-v2
+batch_size: 64
+shots_per_class: 16      # labeled TRAIN examples per class for the logistic-regression probe
+C: 1.0                   # fixed: too few shots for reliable C selection
+max_iter: 1000
